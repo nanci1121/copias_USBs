@@ -1,0 +1,15 @@
+# Variables de entorno con datos sensibles
+.env
+
+# Logs
+*.log
+*.txt
+
+# Archivos temporales
+*.tmp
+*.bak
+*~
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
