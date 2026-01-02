@@ -1,6 +1,6 @@
 # Scripts de Copia de Discos USB
 
-Sistema de backup automático entre discos USB usando rsync.
+Sistema de backup automático entre discos USB usando rsync, optimizado para **Proxmox Backup Server (PBS)**.
 
 ## 📋 Requisitos
 
@@ -26,21 +26,20 @@ Sistema de backup automático entre discos USB usando rsync.
 
 ## 🚀 Uso
 
-### Script de copia básico con log
-```bash
-./clonar_con_log.sh
-```
-
-### Script optimizado con limpieza automática
 ```bash
 ./copiaHuayi.sh
 ```
 
-## 📝 Scripts
+## ✨ Características
 
-- **clonar_con_log.sh**: Copia completa con registro detallado
-- **copiaHuayi.sh**: Copia optimizada con gestión automática de espacio
-- **comandos_linux.md**: Comandos útiles de Linux para gestión de discos
+- **Gestión automática de espacio**: Limpia archivos obsoletos cuando es necesario
+- **Optimizado para PBS**: Maneja eficientemente grandes volúmenes de backups
+- **Logs automáticos**: Genera registros con timestamp en el disco destino
+- **Montaje inteligente**: Verifica y monta discos automáticamente
+
+## 📄 Documentación adicional
+
+- [comandos_linux.md](comandos_linux.md): Comandos útiles de Linux para gestión de discos
 
 ## 🔒 Seguridad
 
