@@ -12,11 +12,13 @@ Sistema de backup automático entre discos USB usando rsync, optimizado para **P
 ## ⚙️ Configuración
 
 1. Copia el archivo de ejemplo:
+
    ```bash
    cp .env.example .env
    ```
 
 2. Edita el archivo `.env` con los UUIDs de tus discos:
+
    ```bash
    # Para obtener los UUIDs:
    sudo blkid
