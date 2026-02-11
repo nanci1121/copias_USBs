@@ -48,6 +48,15 @@ echo "✔️ Log definitivo: $LOGFILE" | tee -a "$LOGFILE"
 # === Verificar espacio ===
 echo "🔍 Comprobando espacio..." | tee -a "$LOGFILE"
 
+# === Verificar que el origen contiene archivos ===
+NUM_ARCHIVOS_ORIGEN=$(find "$MOUNT_ORIGEN" -type f | wc -l)
+if [ "$NUM_ARCHIVOS_ORIGEN" -eq 0 ]; then
+    echo "❌ ERROR: El origen no contiene archivos. No se realizará la copia." | tee -a "$LOGFILE"
+    sudo umount "$MOUNT_ORIGEN"
+    sudo umount "$MOUNT_DESTINO"
+    exit 1
+fi
+
 TAMANO_ORIGEN=$(du -skd 0 "$MOUNT_ORIGEN" | awk '{print $1}')
 ESPACIO_DISPONIBLE=$(df -k "$MOUNT_DESTINO" | awk 'NR==2 {print $4}')
 
@@ -61,11 +70,9 @@ echo "💾 Espacio destino (antes): ${ESPACIO_DISPONIBLE_GB} GB" | tee -a "$LOGF
 while [ "$TAMANO_ORIGEN" -gt "$ESPACIO_DISPONIBLE" ]; do
     echo "❌ ERROR: No hay suficiente espacio en destino (${TAMANO_ORIGEN_GB} GB requeridos, ${ESPACIO_DISPONIBLE_GB} GB disponibles)." | tee -a "$LOGFILE"
     
-    # 1. Encontrar la copia más antigua, excluyendo la que estamos creando
-    # ls -td ordena por tiempo (fecha) de modificación y tail -n 1 selecciona la última (la más antigua)
+    # 1. Encontrar la copia más antigua según el nombre del directorio (fecha en el nombre)
     OLDEST_BACKUP=$(find "$MOUNT_DESTINO" -maxdepth 1 -type d -name "backup_*" \
-                    -not -name "backup_$TIMESTAMP" \
-                    -print0 | xargs -0 ls -td | tail -n 1)
+        -not -name "backup_$TIMESTAMP" | sort | head -n 1)
 
     if [ -z "$OLDEST_BACKUP" ]; then
         echo "❌ ERROR FATAL: No hay más copias antiguas para eliminar y el espacio sigue siendo insuficiente." | tee -a "$LOGFILE"
@@ -95,15 +102,17 @@ RSYNC_LOG="$MOUNT_DESTINO/rsync_errors_$TIMESTAMP.log"
 echo "📄 Log de errores de rsync (solo si falla): $RSYNC_LOG" | tee -a "$LOGFILE"
 
 # === COPIA RÁPIDA ===
+
 echo "🚀 Iniciando copia (ver progreso en tiempo real en la consola)..." | tee -a "$LOGFILE"
 
+# El progreso solo se muestra en la consola, el log solo guarda errores y el resumen final
 sudo rsync -aAXH \
-  --human-readable \
-  --info=progress2 \
-  --stats \
-  --partial \
-  "$MOUNT_ORIGEN"/ "$DESTINO_UNICO"/ \
-  > "$LOGFILE" 2> "$RSYNC_LOG"
+    --human-readable \
+    --info=progress2 \
+    --stats \
+    --partial \
+    "$MOUNT_ORIGEN"/ "$DESTINO_UNICO"/ \
+    2> "$RSYNC_LOG"
 
 RSYNC_EXIT=$?
 
@@ -125,6 +134,8 @@ sudo umount "$MOUNT_ORIGEN" || echo "⚠️ No se pudo desmontar origen" | tee -
 sudo umount "$MOUNT_DESTINO" || echo "⚠️ No se pudo desmontar destino" | tee -a "$LOGFILE"
 
 # === Resumen final ===
+TAMANO_COPIA=$(sudo du -sk "$DESTINO_UNICO" | awk '{print $1}')
+TAMANO_COPIA_GB=$(echo "scale=2; $TAMANO_COPIA / 1024 / 1024" | bc)
 ESPACIO_FINAL_DISPONIBLE=$(df -k "$MOUNT_DESTINO" | awk 'NR==2 {print $4}')
 ESPACIO_FINAL_DISPONIBLE_GB=$(echo "scale=2; $ESPACIO_FINAL_DISPONIBLE / 1024 / 1024" | bc)
 
@@ -133,6 +144,7 @@ echo "===== RESUMEN DEL BACKUP =====" | tee -a "$LOGFILE"
 echo "Estado: OK" | tee -a "$LOGFILE"
 echo "Backup creado: $DESTINO_UNICO" | tee -a "$LOGFILE"
 echo "Tamaño origen: ${TAMANO_ORIGEN_GB} GB" | tee -a "$LOGFILE"
+echo "Tamaño copia en destino: ${TAMANO_COPIA_GB} GB" | tee -a "$LOGFILE"
 echo "Espacio restante destino: ${ESPACIO_FINAL_DISPONIBLE_GB} GB" | tee -a "$LOGFILE"
 echo "Errores rsync: $RSYNC_LOG" | tee -a "$LOGFILE"
 echo "==============================" | tee -a "$LOGFILE"
