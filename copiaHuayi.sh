@@ -128,13 +128,8 @@ if [ ! -s "$RSYNC_LOG" ]; then
     RSYNC_LOG="(sin errores)"
 fi
 
-# === Desmontar ===
-echo "💾 Desmontando discos..." | tee -a "$LOGFILE"
-sudo umount "$MOUNT_ORIGEN" || echo "⚠️ No se pudo desmontar origen" | tee -a "$LOGFILE"
-sudo umount "$MOUNT_DESTINO" || echo "⚠️ No se pudo desmontar destino" | tee -a "$LOGFILE"
-
-# === Resumen final ===
-TAMANO_COPIA=$(sudo du -sk "$DESTINO_UNICO" | awk '{print $1}')
+# === Resumen final (ANTES de desmontar para poder acceder a los datos) ===
+TAMANO_COPIA=$(sudo du -skd 0 "$DESTINO_UNICO" | awk '{print $1}')
 TAMANO_COPIA_GB=$(echo "scale=2; $TAMANO_COPIA / 1024 / 1024" | bc)
 ESPACIO_FINAL_DISPONIBLE=$(df -k "$MOUNT_DESTINO" | awk 'NR==2 {print $4}')
 ESPACIO_FINAL_DISPONIBLE_GB=$(echo "scale=2; $ESPACIO_FINAL_DISPONIBLE / 1024 / 1024" | bc)
@@ -148,5 +143,10 @@ echo "Tamaño copia en destino: ${TAMANO_COPIA_GB} GB" | tee -a "$LOGFILE"
 echo "Espacio restante destino: ${ESPACIO_FINAL_DISPONIBLE_GB} GB" | tee -a "$LOGFILE"
 echo "Errores rsync: $RSYNC_LOG" | tee -a "$LOGFILE"
 echo "==============================" | tee -a "$LOGFILE"
+
+# === Desmontar ===
+echo "💾 Desmontando discos..." | tee -a "$LOGFILE"
+sudo umount "$MOUNT_ORIGEN" || echo "⚠️ No se pudo desmontar origen" | tee -a "$LOGFILE"
+sudo umount "$MOUNT_DESTINO" || echo "⚠️ No se pudo desmontar destino" | tee -a "$LOGFILE"
 
 echo "🎉 Backup completado correctamente."
