@@ -125,3 +125,62 @@ Para asegurarte de que todo se ha copiado correctamente.
     ```bash
     diff -rq /media/usuario/USB_ORIGEN/ /media/usuario/USB_DESTINO/
     ```
+
+* **Script automático de verificación**: Usa el script `comprobarUsb.sh` que compara UUID, tamaño total, número de archivos y fechas de modificación entre dos carpetas.
+
+    ```bash
+    # Usando rutas del archivo .env (verifica UUID automáticamente)
+    ./comprobarUsb.sh
+    
+    # Especificando rutas manualmente
+    ./comprobarUsb.sh /media/usuario/USB_ORIGEN /media/usuario/USB_DESTINO
+    
+    # Verificación exhaustiva con checksums (lento pero preciso)
+    ./comprobarUsb.sh --checksum
+    ```
+
+## Gestión de repositorios APT
+
+### Reparar clave GPG faltante o corrupta
+
+Si `apt update` falla con error de firma digital o clave GPG faltante:
+
+1. **Identificar el repositorio problemático**: Busca en la salida de `apt update` la huella de la clave que falta (ejemplo: `35BAA0B33E9EB396F59CA838C0BA5CE6DC6315A3`).
+
+2. **Localizar la configuración del repositorio**:
+
+    ```bash
+    grep -r "nombre-del-repo" /etc/apt/sources.list /etc/apt/sources.list.d/
+    ```
+
+3. **Descargar e instalar la clave GPG correcta**:
+
+    Para repositorios de Google Artifact Registry (`apt.pkg.dev`):
+
+    ```bash
+    # Verificar la huella de la clave antes de instalar
+    wget -qO- https://us-central1-apt.pkg.dev/doc/repo-signing-key.gpg | gpg --show-keys --with-fingerprint
+    
+    # Instalar la clave en el keyring
+    wget -qO- https://us-central1-apt.pkg.dev/doc/repo-signing-key.gpg | gpg --dearmor | sudo tee /etc/apt/keyrings/nombre-repo-key.gpg >/dev/null
+    
+    # Ajustar permisos
+    sudo chmod 644 /etc/apt/keyrings/nombre-repo-key.gpg
+    
+    # Actualizar
+    sudo apt update
+    ```
+
+4. **Alternativa: Desactivar el repositorio** (si no lo usas):
+
+    ```bash
+    sudo mv /etc/apt/sources.list.d/nombre-repo.list /etc/apt/sources.list.d/nombre-repo.list.disabled
+    sudo apt update
+    ```
+
+5. **Verificar que no haya más claves corruptas**:
+
+    ```bash
+    # Buscar archivos de clave vacíos o problemáticos
+    find /etc/apt/keyrings /etc/apt/trusted.gpg.d -type f -size 0
+    ```
