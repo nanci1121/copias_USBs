@@ -105,6 +105,17 @@ Una vez identificados los puntos de montaje de los USB (por ejemplo, `/media/usu
     rsync -av --progress /media/usuario/USB_ORIGEN/ /media/usuario/USB_DESTINO/
     ```
 
+* `rclone` (Ideal para millones de archivos pequeños): Permite realizar copias con múltiples hilos en paralelo, lo que acelera enormemente la transferencia en discos USB con estructuras como las de Proxmox Backup Server.
+  * `--transfers 16`: Copia 16 archivos a la vez.
+  * `--checkers 32`: Usa 32 hilos para comprobar metadatos.
+  * `-P`: Muestra el progreso visual.
+
+    **Ejemplo de copia paralela:**
+
+    ```bash
+    rclone copy /media/usuario/USB_ORIGEN/ /media/usuario/USB_DESTINO/ --transfers 16 --checkers 32 -P
+    ```
+
 * `cp`: El comando de copia básico.
 
   * `-r`: Copia directorios de forma recursiva.

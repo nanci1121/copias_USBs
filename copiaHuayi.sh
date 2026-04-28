@@ -18,6 +18,7 @@ TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 TMP_LOGFILE="/tmp/backup_$TIMESTAMP.log"
 
 echo "== Iniciando proceso de copia completa (MODO VELOZ) ==" | tee -a "$TMP_LOGFILE"
+curl -d "Iniciando copia de seguridad (rsync) 🚀" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
 echo "Log temporal: $TMP_LOGFILE" | tee -a "$TMP_LOGFILE"
 
 sudo mkdir -p "$MOUNT_ORIGEN" "$MOUNT_DESTINO"
@@ -119,6 +120,7 @@ RSYNC_EXIT=$?
 # === Evaluar resultado ===
 if [ $RSYNC_EXIT -ne 0 ]; then
     echo "❌ ERROR: Falló la copia (ver $RSYNC_LOG)." | tee -a "$LOGFILE"
+    curl -H "Priority: 5" -H "Tags: warning,backup" -d "Error en la copia rsync ❌" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
     exit 1
 fi
 
@@ -150,3 +152,4 @@ sudo umount "$MOUNT_ORIGEN" || echo "⚠️ No se pudo desmontar origen" | tee -
 sudo umount "$MOUNT_DESTINO" || echo "⚠️ No se pudo desmontar destino" | tee -a "$LOGFILE"
 
 echo "🎉 Backup completado correctamente."
+curl -H "Tags: white_check_mark,backup" -d "Backup rsync completado con éxito 🎉" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1

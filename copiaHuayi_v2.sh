@@ -5,11 +5,12 @@
 # =============================================================
 
 # === CARGAR CONFIGURACIÓN ===
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Intentar obtener el directorio del script de forma compatible con bash y sh
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
 if [ -f "$SCRIPT_DIR/.env" ]; then
-    source "$SCRIPT_DIR/.env"
+    . "$SCRIPT_DIR/.env"
 else
-    echo "❌ ERROR: Archivo .env no encontrado"
+    echo "❌ ERROR: Archivo .env no encontrado en $SCRIPT_DIR"
     exit 1
 fi
 
@@ -17,6 +18,7 @@ TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
 LOGFILE="/tmp/backup_rclone_$TIMESTAMP.log"
 
 echo "== Iniciando proceso (MODO PARALELO CON RCLONE) =="
+curl -d "Iniciando copia de seguridad (rclone) 🚀" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
 
 # === 1. MONTAJE ===
 sudo mkdir -p "$MOUNT_ORIGEN" "$MOUNT_DESTINO"
@@ -86,8 +88,10 @@ RCLONE_EXIT=$?
 # === 5. FINALIZACIÓN ===
 if [ $RCLONE_EXIT -eq 0 ]; then
     echo "🎉 Backup completado con éxito."
+    curl -H "Tags: white_check_mark,backup" -d "Backup rclone completado con éxito 🎉" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
 else
     echo "❌ Error en la copia con rclone. Código: $RCLONE_EXIT"
+    curl -H "Priority: 5" -H "Tags: warning,backup" -d "Error en la copia rclone ❌ Código: $RCLONE_EXIT" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
 fi
 
 echo "💾 Desmontando discos..."
