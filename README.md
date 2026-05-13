@@ -21,11 +21,12 @@ Sistema de backup automático entre discos USB, optimizado para **Proxmox Backup
 2. Edita el archivo `.env` con los UUIDs de tus discos y el tema de notificaciones (ntfy):
 
    ```bash
-   UUID_ORIGEN="..."
-   UUID_DESTINO="..."
-   
-   # Para recibir notificaciones en tu móvil (ntfy.sh)
-   NTFY_TOPIC="tu_tema_secreto_aqui"
+    UUID_ORIGEN="..."
+    UUID_ORIGEN_ALT="..."  # (Opcional) Segundo disco si el principal falla
+    UUID_DESTINO="..."
+    
+    # Para recibir notificaciones en tu móvil (ntfy.sh)
+    NTFY_TOPIC="tu_tema_secreto_aqui"
    ```
 
 ## 🚀 Uso
@@ -49,8 +50,9 @@ sudo ./copiaHuayi.sh
 - **Gestión automática de espacio**: Verifica el espacio y limpia copias obsoletas (las más antiguas) cuando es necesario antes de empezar.
 - **Notificaciones Push**: Integración con **ntfy.sh** para avisarte al móvil cuando empieza la copia, cuando termina con éxito o si hay algún error (con alerta prioritaria).
 - **Optimizado para PBS**: Maneja eficientemente grandes volúmenes de backups.
-- **Logs automáticos**: Genera registros de las operaciones.
-- **Montaje inteligente**: Verifica y monta los discos de origen y destino automáticamente usando sus UUIDs para evitar errores de ruta.
+- **Logs automáticos**: Genera registros detallados en la carpeta `logs/` local (excluida de git).
+- **Montaje inteligente**: Verifica y monta los discos automáticamente. Soporta un **origen secundario** (`UUID_ORIGEN_ALT`) si el principal no está conectado.
+- **Métrica de rendimiento**: Informa del tiempo total de ejecución al finalizar.
 
 ## 📄 Documentación adicional
 

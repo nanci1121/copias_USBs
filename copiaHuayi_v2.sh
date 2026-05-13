@@ -14,10 +14,19 @@ else
     exit 1
 fi
 
+START_TIME=$SECONDS
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
-LOGFILE="/tmp/backup_rclone_$TIMESTAMP.log"
+
+# Crear directorio de logs si no existe
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+LOGFILE="$LOG_DIR/backup_$TIMESTAMP.log"
+
+# Redirigir toda la salida al log y a la pantalla
+exec > >(tee -a "$LOGFILE") 2>&1
 
 echo "== Iniciando proceso (MODO PARALELO CON RCLONE) =="
+echo "📝 Log guardado en: $LOGFILE"
 curl -d "Iniciando copia de seguridad (rclone) 🚀" ntfy.sh/"$NTFY_TOPIC" >/dev/null 2>&1
 
 # === 1. MONTAJE ===
@@ -31,7 +40,22 @@ mount_disco() {
     fi
 }
 
-mount_disco "$MOUNT_ORIGEN" "$UUID_ORIGEN" || { echo "❌ Error origen"; exit 1; }
+# Intentar montar el origen (probar con el principal y luego con el alternativo si existe)
+ORIGEN_MONTADO=false
+for uuid in "$UUID_ORIGEN" "$UUID_ORIGEN_ALT"; do
+    if [ -n "$uuid" ]; then
+        echo "🔄 Intentando montar origen con UUID: $uuid"
+        if mount_disco "$MOUNT_ORIGEN" "$uuid"; then
+            ORIGEN_MONTADO=true
+            break
+        fi
+    fi
+done
+
+if [ "$ORIGEN_MONTADO" = false ]; then
+    echo "❌ ERROR: No se pudo montar ningún disco de origen."
+    exit 1
+fi
 mount_disco "$MOUNT_DESTINO" "$UUID_DESTINO" || { echo "❌ Error destino"; exit 1; }
 
 # === 2. CÁLCULO DE ESPACIO (INSTANTÁNEO) ===
@@ -97,3 +121,15 @@ fi
 echo "💾 Desmontando discos..."
 sudo umount "$MOUNT_ORIGEN"
 sudo umount "$MOUNT_DESTINO"
+
+# === 6. RESUMEN FINAL ===
+END_TIME=$SECONDS
+DURATION=$((END_TIME - START_TIME))
+H=$((DURATION / 3600))
+M=$(( (DURATION % 3600) / 60 ))
+S=$((DURATION % 60))
+
+echo "------------------------------------------"
+printf "⏱️ Tiempo total de ejecución: %02d:%02d:%02d\n" $H $M $S
+echo "📂 Log final disponible en: $LOGFILE"
+echo "------------------------------------------"
